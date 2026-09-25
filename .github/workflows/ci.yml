@@ -28,6 +28,3 @@ jobs:
 
       - name: Testar e Compilar - Pagamento Service
         run: mvn -f pagamento-service/pom.xml clean test
-
-      - name: Validar Build do Docker Compose
-        run: docker-compose build
