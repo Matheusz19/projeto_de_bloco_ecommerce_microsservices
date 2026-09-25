@@ -24,6 +24,11 @@ public class ProdutoController {
         return ResponseEntity.ok(produtoService.listarTodos());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Produto> buscarProdutoPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(produtoService.buscarPorId(id));
+    }
+
     @PostMapping
     public ResponseEntity<Produto> cadastrarProduto(@RequestBody @Valid Produto produto) {
         Produto produtoSalvo = produtoService.salvar(produto);

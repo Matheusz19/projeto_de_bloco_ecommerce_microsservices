@@ -10,21 +10,16 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
     public static final String FILA_ESTOQUE = "estoque.baixar.queue";
     public static final String EXCHANGE_PEDIDOS = "pedidos.exchange";
-    public static final String ROUTING_KEY_PAGO = "pedido.pago";
 
     @Bean
-    public Queue filaEstoque() {
-        return new Queue(FILA_ESTOQUE, true);
-    }
+    public Queue filaEstoque() { return new Queue(FILA_ESTOQUE, true); }
 
     @Bean
-    public TopicExchange exchangePedidos() {
-        return new TopicExchange(EXCHANGE_PEDIDOS);
-    }
+    public TopicExchange exchangePedidos() { return new TopicExchange(EXCHANGE_PEDIDOS); }
 
     @Bean
     public Binding bindingEstoque() {
-        return BindingBuilder.bind(filaEstoque()).to(exchangePedidos()).with(ROUTING_KEY_PAGO);
+        return BindingBuilder.bind(filaEstoque()).to(exchangePedidos()).with("pagamento.processado");
     }
 
     @Bean

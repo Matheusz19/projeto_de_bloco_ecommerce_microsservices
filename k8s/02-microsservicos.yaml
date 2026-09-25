@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalogo-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalogo-service
+  template:
+    metadata:
+      labels:
+        app: catalogo-service
+    spec:
+      containers:
+        - name: catalogo-service
+          image: projeto-catalogo-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              value: "http://zipkin:9411/api/v2/spans"
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: "1.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogo-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8082
+      targetPort: 8082
+  selector:
+    app: catalogo-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pedido-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pedido-service
+  template:
+    metadata:
+      labels:
+        app: pedido-service
+    spec:
+      containers:
+        - name: pedido-service
+          image: projeto-pedido-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8087
+          env:
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              value: "http://zipkin:9411/api/v2/spans"
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: "1.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pedido-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8087
+      targetPort: 8087
+  selector:
+    app: pedido-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pagamento-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pagamento-service
+  template:
+    metadata:
+      labels:
+        app: pagamento-service
+    spec:
+      containers:
+        - name: pagamento-service
+          image: projeto-pagamento-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              value: "http://zipkin:9411/api/v2/spans"
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: "1.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pagamento-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8081
+  selector:
+    app: pagamento-service

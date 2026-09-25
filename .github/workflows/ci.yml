@@ -1,0 +1,33 @@
+name: CI/CD Pipeline - Microservicos
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Testar e Compilar - Catalogo Service
+        run: mvn -f catalogo-service/pom.xml clean test
+
+      - name: Testar e Compilar - Pedido Service
+        run: mvn -f pedido-service/pom.xml clean test
+
+      - name: Testar e Compilar - Pagamento Service
+        run: mvn -f pagamento-service/pom.xml clean test
+
+      - name: Validar Build do Docker Compose
+        run: docker-compose build

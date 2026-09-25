@@ -1,14 +1,15 @@
 package com.Projeto.pedido.service;
 
 import com.Projeto.pedido.domain.Carrinho;
-import com.Projeto.pedido.client.PagamentoClient;
-import com.Projeto.pedido.client.PagamentoRequestDTO;
 import com.Projeto.pedido.domain.ItemPedido;
 import com.Projeto.pedido.domain.Pedido;
 import com.Projeto.pedido.domain.StatusPedido;
+import com.Projeto.pedido.exceptions.RecursoNaoEncontradoException;
+import com.Projeto.pedido.exceptions.RegraNegocioException;
 import com.Projeto.pedido.repository.PedidoRepository;
-import com.Projeto.pedido.dto.PedidoPagoEvent;
+import com.Projeto.pedido.dto.PedidoEvent;
 import com.Projeto.pedido.dto.ItemPedidoDTO;
+import com.Projeto.pedido.dto.ResultadoEstoqueEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
@@ -23,15 +24,13 @@ public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
     private final CarrinhoService carrinhoService;
-    private final PagamentoClient pagamentoClient;
     private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public Pedido realizarCheckout(Long carrinhoId) {
         Carrinho carrinho = carrinhoService.buscarPorId(carrinhoId);
-
         if (carrinho.getItens().isEmpty()) {
-            throw new RuntimeException("Não é possível fechar pedido com carrinho vazio.");
+            throw new RegraNegocioException("Não é possível fechar um pedido com o carrinho vazio.");
         }
 
         Pedido pedido = new Pedido();
@@ -39,37 +38,37 @@ public class PedidoService {
         pedido.setTotal(carrinho.calcularTotal());
 
         List<ItemPedido> itensPedido = carrinho.getItens().stream()
-                .map(itemCart -> new ItemPedido(
-                        null,
-                        itemCart.getProdutoId(),
-                        itemCart.getQuantidade(),
-                        itemCart.getPrecoUnitario()))
+                .map(itemCart -> new ItemPedido(null, itemCart.getProdutoId(), itemCart.getQuantidade(), itemCart.getPrecoUnitario()))
                 .collect(Collectors.toList());
-
         pedido.getItens().addAll(itensPedido);
         Pedido pedidoSalvo = pedidoRepository.save(pedido);
 
-        PagamentoRequestDTO pagamentoRequest = new PagamentoRequestDTO(pedidoSalvo.getId(), pedidoSalvo.getTotal());
-        pagamentoClient.processarPagamento(pagamentoRequest);
-
-        pedidoSalvo.setStatus(StatusPedido.PAGO);
-        Pedido pedidoFinal = pedidoRepository.save(pedidoSalvo);
-
-        PedidoPagoEvent evento = new PedidoPagoEvent();
-        evento.setPedidoId(pedidoFinal.getId());
-
-        List<ItemPedidoDTO> dtoItens = pedidoFinal.getItens().stream()
+        PedidoEvent evento = new PedidoEvent();
+        evento.setPedidoId(pedidoSalvo.getId());
+        evento.setItens(pedidoSalvo.getItens().stream()
                 .map(item -> new ItemPedidoDTO(item.getProdutoId(), item.getQuantidade()))
-                .collect(Collectors.toList());
-        evento.setItens(dtoItens);
+                .collect(Collectors.toList()));
 
-        rabbitTemplate.convertAndSend("pedidos.exchange", "pedido.pago", evento);
+        rabbitTemplate.convertAndSend("pedidos.exchange", "pedido.criado", evento);
+        return pedidoSalvo;
+    }
 
-        return pedidoFinal;
+    @org.springframework.amqp.rabbit.annotation.RabbitListener(queues = "pedido.resultado.queue")
+    @Transactional
+    public void finalizarPedido(ResultadoEstoqueEvent resultado) {
+        Pedido pedido = buscarPorId(resultado.getPedidoId());
+
+        if (resultado.isSucesso()) {
+            pedido.setStatus(StatusPedido.PAGO);
+        } else {
+            pedido.setStatus(StatusPedido.CANCELADO);
+        }
+
+        pedidoRepository.save(pedido);
     }
 
     public Pedido buscarPorId(Long id) {
         return pedidoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Pedido não encontrado com ID: " + id));
     }
 }

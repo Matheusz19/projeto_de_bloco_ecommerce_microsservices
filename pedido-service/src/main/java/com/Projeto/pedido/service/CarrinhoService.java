@@ -2,6 +2,8 @@ package com.Projeto.pedido.service;
 
 import com.Projeto.pedido.domain.Carrinho;
 import com.Projeto.pedido.domain.ItemCarrinho;
+import com.Projeto.pedido.exceptions.RecursoNaoEncontradoException;
+import com.Projeto.pedido.exceptions.RegraNegocioException;
 import com.Projeto.pedido.repository.CarrinhoRepository;
 import com.Projeto.pedido.client.CatalogoClient;
 import com.Projeto.pedido.client.ProdutoDTO;
@@ -21,7 +23,7 @@ public class CarrinhoService {
 
     public Carrinho buscarPorId(Long id) {
         return carrinhoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Carrinho não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Carrinho não encontrado com ID: " + id));
     }
 
     public Carrinho adicionarItem(Long carrinhoId, Long produtoId, Integer quantidade) {
@@ -30,10 +32,10 @@ public class CarrinhoService {
         ProdutoDTO produto = catalogoClient.listarTodos().stream()
                 .filter(p -> p.getId().equals(produtoId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado no catálogo"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto não encontrado no catálogo"));
 
         if (produto.getQuantidadeEstoque() < quantidade) {
-            throw new RuntimeException("Estoque insuficiente");
+            throw new RegraNegocioException("Estoque insuficiente para o produto ID: " + produto.getId());
         }
 
         ItemCarrinho novoItem = new ItemCarrinho(null, produto.getId(), quantidade, produto.getPreco());
