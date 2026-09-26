@@ -1,10 +1,10 @@
-# 🛒 E-Commerce Distributed Platform (Event-Driven Microservices Architecture)
+# 🛒 E-Commerce 
 
 Uma plataforma de e-commerce completa construída sobre uma **Arquitetura de Microsserviços Orientada a Eventos**. O ecossistema inclui um **API Gateway**, **Service Discovery**, **Saga Coreografada** via mensageria, rastreamento distribuído fim a fim e automação completa de build e testes.
 
 ---
 
-## 🛠️ Stack Tecnológica
+## 🛠️ Tecnologias
 
 ### **Back-end & Infraestrutura**
 * **Linguagem & Framework:** Java 21 | Spring Boot 3.3
